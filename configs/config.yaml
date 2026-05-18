@@ -1,0 +1,45 @@
+dataset:
+  # Base fallback root, overridden by EXPERIMENTS mappings
+  root: "/Users/narendra/teachingAI"
+  image_size: 256
+  train_pairs: 4000
+  val_pairs: 1000
+  test_pairs: 5000
+  debug_pairs: 400
+
+experiments:
+  boss_stego:
+    cover: "/Users/narendra/teachingAI/BOSSBase/cover"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego"
+  boss_lsb:
+    cover: "/Users/narendra/teachingAI/BOSSBase/cover"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego_lsb"
+  bows2_wow_02:
+    cover: "/Users/narendra/teachingAI/BOWS2/cover"
+    stego: "/Users/narendra/teachingAI/BOWS2/stego/WOW/0.2bpp/stego"
+  bows2_suniward_02:
+    cover: "/Users/narendra/teachingAI/BOWS2/cover"
+    stego: "/Users/narendra/teachingAI/BOWS2/stego/S-UNIWARD/0.2bpp/stego"
+  wow_04:
+    cover: "/Users/narendra/teachingAI/BOSSBase/cover"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego"
+  suniward_04:
+    cover: "/Users/narendra/teachingAI/BOWS2/cover"
+    stego: "/Users/narendra/teachingAI/BOWS2/stego/S-UNIWARD/0.2bpp/stego"
+
+training:
+  batch_size: 16
+  num_workers: 0
+  epochs: 80
+  lr: 1.0e-3
+  weight_decay: 1.0e-5
+  patience: 20
+  seed: 2026
+  out_dir: "./outputs"
+
+run:
+  debug: false
+  experiment_keys:
+    - wow_04
+  models:
+    - srm_tlu_cnn
