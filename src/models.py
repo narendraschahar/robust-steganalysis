@@ -59,13 +59,26 @@ class ConvBNAct(nn.Module):
         return self.net(x)
 
 class ResidualBlock(nn.Module):
-    def __init__(self, channels):
+    def __init__(self, in_ch, out_ch, pool=False):
         super().__init__()
-        self.net = nn.Sequential(ConvBNAct(channels, channels),
-                                 ConvBNAct(channels, channels, relu=False))
+        self.pool = pool
+        self.net = nn.Sequential(
+            ConvBNAct(in_ch, out_ch),
+            ConvBNAct(out_ch, out_ch, relu=False)
+        )
+        if in_ch != out_ch or pool:
+            self.shortcut = nn.Conv2d(in_ch, out_ch, kernel_size=1, stride=2 if pool else 1, bias=False)
+        else:
+            self.shortcut = nn.Identity()
+            
         self.act = nn.ReLU(inplace=True)
+        self.pool_layer = nn.AvgPool2d(3, stride=2, padding=1) if pool else nn.Identity()
+
     def forward(self, x):
-        return self.act(x + self.net(x))
+        residual = self.shortcut(x)
+        out = self.net(x)
+        out = self.pool_layer(out)
+        return self.act(out + residual)
 
 class ChannelAttention(nn.Module):
     def __init__(self, channels, reduction=8):
@@ -122,20 +135,33 @@ class ProposedResAttnTLU(nn.Module):
         super().__init__()
         self.srm = FixedSRMConv()
         self.tlu = TLU(3.0)
-        self.stem = nn.Sequential(ConvBNAct(self.srm.out_channels, 32), ResidualBlock(32))
-        self.down1 = nn.Sequential(ConvBNAct(32, 64, s=2), ResidualBlock(64), CBAMLite(64))
-        self.down2 = nn.Sequential(ConvBNAct(64, 128, s=2), ResidualBlock(128), CBAMLite(128))
-        self.down3 = nn.Sequential(ConvBNAct(128, 192, s=2), ResidualBlock(192), CBAMLite(192))
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Dropout(0.35),
-            nn.Linear(192, 64), nn.ReLU(inplace=True), nn.Dropout(0.20), nn.Linear(64, 2)
+        
+        self.stem = ConvBNAct(self.srm.out_channels, 64)
+        
+        # Stage 1: Unpooled (preserves high-freq spatial resolution)
+        self.layer1 = nn.Sequential(
+            ResidualBlock(64, 64, pool=False),
+            ResidualBlock(64, 64, pool=False),
+            ResidualBlock(64, 64, pool=False)
         )
+        
+        # Stage 2: Pooled with Attention
+        self.layer2 = nn.Sequential(ResidualBlock(64, 64, pool=True), CBAMLite(64))
+        self.layer3 = nn.Sequential(ResidualBlock(64, 128, pool=True), CBAMLite(128))
+        self.layer4 = nn.Sequential(ResidualBlock(128, 256, pool=True), CBAMLite(256))
+        
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1), nn.Flatten(), nn.Dropout(0.5),
+            nn.Linear(256, 2)
+        )
+
     def forward(self, x):
         x = self.tlu(self.srm(x))
         x = self.stem(x)
-        x = self.down1(x)
-        x = self.down2(x)
-        x = self.down3(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
         return self.classifier(x)
 
 def create_model(name):

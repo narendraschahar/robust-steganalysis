@@ -20,12 +20,15 @@ experiments:
   bows2_suniward_02:
     cover: "/Users/narendra/teachingAI/BOWS2/cover"
     stego: "/Users/narendra/teachingAI/BOWS2/stego/S-UNIWARD/0.2bpp/stego"
+  hill_04:
+    cover: "/Users/narendra/teachingAI/BOSSBase/cover"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego_hill_04"
   wow_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
-    stego: "/Users/narendra/teachingAI/BOSSBase/stego"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego_wow_04"
   suniward_04:
-    cover: "/Users/narendra/teachingAI/BOWS2/cover"
-    stego: "/Users/narendra/teachingAI/BOWS2/stego/S-UNIWARD/0.2bpp/stego"
+    cover: "/Users/narendra/teachingAI/BOSSBase/cover"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego_suniward_04"
 
 training:
   batch_size: 16
@@ -33,7 +36,7 @@ training:
   epochs: 80
   lr: 1.0e-3
   weight_decay: 1.0e-5
-  patience: 20
+  patience: 50
   seed: 2026
   out_dir: "./outputs"
 
@@ -41,5 +44,7 @@ run:
   debug: false
   experiment_keys:
     - wow_04
+    - suniward_04
+    - hill_04
   models:
-    - srm_tlu_cnn
+    - proposed_resattn_tlu

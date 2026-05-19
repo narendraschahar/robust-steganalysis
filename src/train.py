@@ -20,9 +20,9 @@ from src.calibration import fit_temperature
 
 def train_one_model(model_name, train_loader, val_loader, config, device, logger):
     model = create_model(model_name).to(device)
-    opt = torch.optim.AdamW(model.parameters(), lr=float(config["training"]["lr"]), 
-                            weight_decay=float(config["training"]["weight_decay"]))
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='max', factor=0.5, patience=5)
+    opt = torch.optim.Adamax(model.parameters(), lr=float(config["training"]["lr"]), 
+                             weight_decay=float(config["training"]["weight_decay"]))
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='max', factor=0.5, patience=15)
     ce = nn.CrossEntropyLoss()
     
     best_state = copy.deepcopy(model.state_dict())
