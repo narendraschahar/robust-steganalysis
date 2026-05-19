@@ -18,8 +18,12 @@ from src.evaluate import predict_loader, evaluate_robustness, plot_reliability
 from src.metrics import find_best_threshold
 from src.calibration import fit_temperature
 
-def train_one_model(model_name, train_loader, val_loader, config, device, logger):
-    model = create_model(model_name).to(device)
+def train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path=None, epochs_override=None):
+    model = create_model(model_name)
+    if pretrained_path and os.path.exists(pretrained_path):
+        logger.info(f"Loading pretrained weights from {pretrained_path}")
+        model.load_state_dict(torch.load(pretrained_path, map_location='cpu'))
+    model = model.to(device)
     opt = torch.optim.Adamax(model.parameters(), lr=float(config["training"]["lr"]), 
                              weight_decay=float(config["training"]["weight_decay"]))
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='max', factor=0.5, patience=15)
@@ -29,7 +33,7 @@ def train_one_model(model_name, train_loader, val_loader, config, device, logger
     best_auc, best_epoch, patience = -1.0, 0, 0
     history = []
     
-    epochs = config["training"]["epochs"]
+    epochs = epochs_override if epochs_override else config["training"]["epochs"]
     max_patience = config["training"]["patience"]
 
     for epoch in range(1, epochs + 1):
@@ -106,7 +110,9 @@ def run_single_experiment(experiment_key, models, config, device, logger):
 
         seed_everything(config["training"]["seed"])
         
-        model, hist = train_one_model(model_name, train_loader, val_loader, config, device, logger)
+        pretrained_path = exp_dict.get("pretrained", None)
+        epochs_override = exp_dict.get("epochs", None)
+        model, hist = train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path, epochs_override)
         hist_path = exp_dir / f"{model_name}_{experiment_key}_history.csv"
         hist.to_csv(hist_path, index=False)
 
@@ -122,13 +128,18 @@ def run_single_experiment(experiment_key, models, config, device, logger):
         )
         logger.info(f"Test metrics: {test_metrics}")
 
-        # Save Checkpoint
+        # Save Full Checkpoint
         ckpt_path = exp_dir / f"{model_name}_{experiment_key}.pt"
         torch.save({
             "model_name": model_name, "experiment_key": experiment_key, 
             "state_dict": model.state_dict(), "temperature": T, 
             "threshold": best_thr, "config": config
         }, ckpt_path)
+        
+        # Save raw state dict for curriculum learning
+        best_ckpt_path = exp_dir / f"{model_name}_{experiment_key}_best.pt"
+        torch.save(model.state_dict(), best_ckpt_path)
+        logger.info(f"Best checkpoint saved to {best_ckpt_path}")
 
         # Plot Reliability
         plot_reliability(test_y, test_prob, f"{model_name} / {experiment_key}",

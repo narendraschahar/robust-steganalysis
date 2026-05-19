@@ -20,15 +20,25 @@ experiments:
   bows2_suniward_02:
     cover: "/Users/narendra/teachingAI/BOWS2/cover"
     stego: "/Users/narendra/teachingAI/BOWS2/stego/S-UNIWARD/0.2bpp/stego"
-  hill_04:
+  wow_10:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
-    stego: "/Users/narendra/teachingAI/BOSSBase/stego_hill_04"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego_wow_10"
+    epochs: 10
   wow_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_wow_04"
+    pretrained: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    epochs: 100
   suniward_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_suniward_04"
+    pretrained: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    epochs: 100
+  hill_04:
+    cover: "/Users/narendra/teachingAI/BOSSBase/cover"
+    stego: "/Users/narendra/teachingAI/BOSSBase/stego_hill_04"
+    pretrained: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    epochs: 100
 
 training:
   batch_size: 16
@@ -43,6 +53,7 @@ training:
 run:
   debug: false
   experiment_keys:
+    - wow_10
     - wow_04
     - suniward_04
     - hill_04

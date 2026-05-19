@@ -99,9 +99,16 @@ def process_file(args):
     return embed_wow(cover_path, out_path, payload, filters)
 
 def main():
-    cover_dir = "/Users/narendra/teachingAI/BOSSBase/cover"
-    out_dir = "/Users/narendra/teachingAI/BOSSBase/stego_wow_04"
-    payload = 0.4
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cover_dir", default="/Users/narendra/teachingAI/BOSSBase/cover")
+    parser.add_argument("--out_dir", default="/Users/narendra/teachingAI/BOSSBase/stego_wow_04")
+    parser.add_argument("--payload", type=float, default=0.4)
+    args_cli = parser.parse_args()
+    
+    cover_dir = args_cli.cover_dir
+    out_dir = args_cli.out_dir
+    payload = args_cli.payload
     
     os.makedirs(out_dir, exist_ok=True)
     
