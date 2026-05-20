@@ -27,7 +27,8 @@ def train_one_model(model_name, train_loader, val_loader, config, device, logger
     opt = torch.optim.Adamax(model.parameters(), lr=float(config["training"]["lr"]), 
                              weight_decay=float(config["training"]["weight_decay"]))
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='max', factor=0.5, patience=15)
-    ce = nn.CrossEntropyLoss()
+    label_smoothing = float(config["training"].get("label_smoothing", 0.0))
+    ce = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     
     best_state = copy.deepcopy(model.state_dict())
     best_auc, best_epoch, patience = -1.0, 0, 0
@@ -110,7 +111,8 @@ def run_single_experiment(experiment_key, models, config, device, logger):
 
         seed_everything(config["training"]["seed"])
         
-        pretrained_path = exp_dict.get("pretrained", None)
+        pretrained_key = f"pretrained_{model_name}"
+        pretrained_path = exp_dict.get(pretrained_key, exp_dict.get("pretrained", None))
         epochs_override = exp_dict.get("epochs", None)
         model, hist = train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path, epochs_override)
         hist_path = exp_dir / f"{model_name}_{experiment_key}_history.csv"

@@ -23,29 +23,33 @@ experiments:
   wow_10:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_wow_10"
-    epochs: 10
+    epochs: 20
   wow_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_wow_04"
-    pretrained: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    pretrained_proposed_resattn_tlu: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    pretrained_srnet_proposed: "./outputs/wow_10/srnet_proposed_wow_10_best.pt"
     epochs: 100
   suniward_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_suniward_04"
-    pretrained: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    pretrained_proposed_resattn_tlu: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    pretrained_srnet_proposed: "./outputs/wow_10/srnet_proposed_wow_10_best.pt"
     epochs: 100
   hill_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_hill_04"
-    pretrained: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    pretrained_proposed_resattn_tlu: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
+    pretrained_srnet_proposed: "./outputs/wow_10/srnet_proposed_wow_10_best.pt"
     epochs: 100
 
 training:
   batch_size: 16
-  num_workers: 0
+  num_workers: 4
   epochs: 80
-  lr: 1.0e-3
-  weight_decay: 1.0e-5
+  lr: 2.0e-3
+  weight_decay: 1.0e-4
+  label_smoothing: 0.05
   patience: 50
   seed: 2026
   out_dir: "./outputs"
@@ -59,3 +63,4 @@ run:
     - hill_04
   models:
     - proposed_resattn_tlu
+    - srnet_proposed
