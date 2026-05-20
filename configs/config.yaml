@@ -44,8 +44,8 @@ experiments:
     epochs: 100
 
 training:
-  batch_size: 16
-  num_workers: 0
+  batch_size: 32
+  num_workers: 4
   epochs: 80
   lr: 2.0e-3
   weight_decay: 1.0e-4
@@ -58,5 +58,6 @@ run:
   debug: false
   experiment_keys:
     - wow_10
+    - wow_04
   models:
     - proposed_resattn_tlu
