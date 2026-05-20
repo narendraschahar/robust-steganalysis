@@ -217,10 +217,13 @@ class ProposedResAttnTLU(nn.Module):
         self.tlu = TLU(3.0)
         srm_ch = self.srm.out_channels          # 30
 
-        # Stem conv to 64 channels
-        self.stem = ConvBNAct(srm_ch, 64, k=3, p=1)
+        # Stem: stride-2 to go from 512x512 → 256x256 immediately
+        # This reduces VRAM of unpooled blocks by 4x
+        self.stem = nn.Sequential(
+            ConvBNAct(srm_ch, 64, k=3, s=2, p=1),   # 512 → 256
+        )
 
-        # Stage 1 – Unpooled (keep 512×512)
+        # Stage 1 – Unpooled at 256x256 (4x less memory than at 512x512)
         self.layer1 = nn.Sequential(
             ResBlock(64, 64, pool=False, se=False),
             ResBlock(64, 64, pool=False, se=False),
@@ -229,10 +232,10 @@ class ProposedResAttnTLU(nn.Module):
         )
 
         # Stage 2 – Pooled with SE
-        self.layer2 = ResBlock(64,  128, pool=True, se=True)   # → 256×256
-        self.layer3 = ResBlock(128, 256, pool=True, se=True)   # → 128×128
-        self.layer4 = ResBlock(256, 512, pool=True, se=True)   # → 64×64
-        self.layer5 = ResBlock(512, 512, pool=True, se=True)   # → 32×32
+        self.layer2 = ResBlock(64,  128, pool=True, se=True)   # 256 → 128
+        self.layer3 = ResBlock(128, 256, pool=True, se=True)   # 128 → 64
+        self.layer4 = ResBlock(256, 512, pool=True, se=True)   # 64  → 32
+        self.layer5 = ResBlock(512, 512, pool=True, se=True)   # 32  → 16
 
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
