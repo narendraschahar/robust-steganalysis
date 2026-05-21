@@ -28,8 +28,7 @@ experiments:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
     stego: "/Users/narendra/teachingAI/BOSSBase/stego_wow_04"
     pretrained_proposed_resattn_tlu: "./outputs/wow_10/proposed_resattn_tlu_wow_10_best.pt"
-    pretrained_srnet_proposed: "./outputs/wow_10/srnet_proposed_wow_10_best.pt"
-    epochs: 50
+    epochs: 30
     lr: 2.0e-4
   suniward_04:
     cover: "/Users/narendra/teachingAI/BOSSBase/cover"
@@ -47,8 +46,8 @@ experiments:
     lr: 2.0e-4
 
 training:
-  batch_size: 32
-  num_workers: 4
+  batch_size: 16
+  num_workers: 0
   epochs: 80
   lr: 2.0e-3
   weight_decay: 1.0e-4
