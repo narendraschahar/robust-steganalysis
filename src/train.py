@@ -18,15 +18,25 @@ from src.evaluate import predict_loader, evaluate_robustness, plot_reliability
 from src.metrics import find_best_threshold
 from src.calibration import fit_temperature
 
-def train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path=None, epochs_override=None):
+def train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path=None, epochs_override=None, lr_override=None):
     model = create_model(model_name)
     if pretrained_path and os.path.exists(pretrained_path):
         logger.info(f"Loading pretrained weights from {pretrained_path}")
         model.load_state_dict(torch.load(pretrained_path, map_location='cpu'))
     model = model.to(device)
-    opt = torch.optim.Adamax(model.parameters(), lr=float(config["training"]["lr"]), 
+    
+    # Use fine-tuning LR if pretrained weights loaded, else base LR
+    base_lr = lr_override if lr_override else float(config["training"]["lr"])
+    logger.info(f"Learning rate: {base_lr:.2e}")
+    
+    opt = torch.optim.Adamax(model.parameters(), lr=base_lr,
                              weight_decay=float(config["training"]["weight_decay"]))
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, mode='max', factor=0.5, patience=15)
+    epochs = epochs_override if epochs_override else config["training"]["epochs"]
+    
+    # CosineAnnealingWarmRestarts: proven best scheduler for steganalysis
+    # T_0=10: restart every 10 epochs, T_mult=2: double the period each restart
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(opt, T_0=10, T_mult=2, eta_min=base_lr * 0.01)
+    
     label_smoothing = float(config["training"].get("label_smoothing", 0.0))
     ce = nn.CrossEntropyLoss(label_smoothing=label_smoothing)
     
@@ -34,7 +44,6 @@ def train_one_model(model_name, train_loader, val_loader, config, device, logger
     best_auc, best_epoch, patience = -1.0, 0, 0
     history = []
     
-    epochs = epochs_override if epochs_override else config["training"]["epochs"]
     max_patience = config["training"]["patience"]
 
     for epoch in range(1, epochs + 1):
@@ -48,6 +57,7 @@ def train_one_model(model_name, train_loader, val_loader, config, device, logger
             opt.zero_grad(set_to_none=True)
             loss = ce(model(x), y)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             opt.step()
             
             loss_sum += loss.item() * x.size(0)
@@ -67,7 +77,7 @@ def train_one_model(model_name, train_loader, val_loader, config, device, logger
         auc = val_metrics["roc_auc"]
         logger.info(f"Epoch {epoch:03d} | loss={train_loss:.4f} | val_auc={auc:.4f} | val_acc={val_metrics['accuracy']:.4f} | val_bal_best={best_bal:.4f} | thr={best_thr:.3f} | lr={opt.param_groups[0]['lr']:.2e}")
         
-        scheduler.step(auc)
+        scheduler.step(epoch)
         
         if auc > best_auc:
             best_auc, best_epoch, patience = auc, epoch, 0
@@ -114,7 +124,10 @@ def run_single_experiment(experiment_key, models, config, device, logger):
         pretrained_key = f"pretrained_{model_name}"
         pretrained_path = exp_dict.get(pretrained_key, exp_dict.get("pretrained", None))
         epochs_override = exp_dict.get("epochs", None)
-        model, hist = train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path, epochs_override)
+        lr_override = exp_dict.get("lr", None)
+        if lr_override:
+            lr_override = float(lr_override)
+        model, hist = train_one_model(model_name, train_loader, val_loader, config, device, logger, pretrained_path, epochs_override, lr_override)
         hist_path = exp_dir / f"{model_name}_{experiment_key}_history.csv"
         hist.to_csv(hist_path, index=False)
 
